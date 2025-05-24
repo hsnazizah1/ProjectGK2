@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Babylon</title>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.js"></script>
+  <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+  <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    canvas { width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+<script>
+  const canvas = document.getElementById("renderCanvas");
+  const engine = new BABYLON.Engine(canvas, true);
+
+  const createScene = async () => {
+    const scene = new BABYLON.Scene(engine);
+
+    const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 3, 6, BABYLON.Vector3.Zero(), scene);
+    camera.attachControl(canvas, true);
+    new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+    // GUI
+    const gui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+    const button = BABYLON.GUI.Button.CreateSimpleButton("btn", "Goyangin Ekor");
+    button.width = "200px";
+    button.height = "50px";
+    button.color = "white";
+    button.cornerRadius = 10;
+    button.background = "#4CAF50";
+    button.top = "-40px";
+    button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+    gui.addControl(button);
+
+    // Load kuceng
+    const result = await BABYLON.SceneLoader.ImportMeshAsync(null, "./", "kuceng.glb", scene);
+    const kuceng = result.meshes[0];
+
+    // Animasi idle: spin
+    const spin = new BABYLON.Animation("spinY", "rotation.y", 30,
+      BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+    spin.setKeys([{ frame: 0, value: 0 }, { frame: 60, value: 2 * Math.PI }]);
+    kuceng.animations.push(spin);
+    scene.beginAnimation(kuceng, 0, 60, true);
+
+    // Animasi idle: bounce
+    const bounce = new BABYLON.Animation("bounceY", "position.y", 30,
+      BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+    bounce.setKeys([{ frame: 0, value: 0 }, { frame: 30, value: 0.4 }, { frame: 60, value: 0 }]);
+    kuceng.animations.push(bounce);
+    scene.beginAnimation(kuceng, 0, 60, true);
+
+    // Ambil ekor
+    const tail = scene.getMeshByName("Cube.001_primitive0");
+
+    if (tail) {
+      const wag = new BABYLON.Animation("wagZ", "rotation.z", 30,
+        BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+      wag.setKeys([
+        { frame: 0, value:  0.3 },
+        { frame: 15, value: -0.3 },
+        { frame: 30, value:  0.3 }
+      ]);
+      tail.animations.push(wag);
+
+      // Trigger via tombol
+      let wagging = false;
+      button.onPointerUpObservable.add(() => {
+        if (!wagging) {
+          scene.beginAnimation(tail, 0, 30, true);
+          button.textBlock.text = "Berhentiin Ekor";
+          wagging = true;
+        } else {
+          scene.stopAnimation(tail);
+          button.textBlock.text = "Goyangin Ekor";
+          wagging = false;
+        }
+      });
+    } else {
+      console.warn("Ekor tidak ditemukan");
+      button.isEnabled = false;
+      button.textBlock.text = "Ekor tidak ditemukan";
+    }
+
+    // Toggle Inspector pakai tombol 'I'
+    scene.debugLayer.show();
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "i" || e.key === "I") {
+        scene.debugLayer.isVisible() ? scene.debugLayer.hide() : scene.debugLayer.show();
+      }
+    });
+
+    return scene;
+  };
+
+  createScene().then(scene => {
+    engine.runRenderLoop(() => scene.render());
+    window.addEventListener("resize", () => engine.resize());
+  });
+</script>
+</body>
+</html>
