@@ -57,33 +57,42 @@
     scene.beginAnimation(kuceng, 0, 60, true);
 
     // Ambil ekor
-    const tail = scene.getMeshByName("Cube.001_primitive0");
+    const tail1 = scene.getMeshByName("Cube.001_primitive0");
+    const tail2 = scene.getMeshByName("Cube.001_primitive1");
 
-    if (tail) {
-      const wag = new BABYLON.Animation("wagZ", "rotation.z", 30,
-        BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
-      wag.setKeys([
-        { frame: 0, value:  0.3 },
-        { frame: 15, value: -0.3 },
-        { frame: 30, value:  0.3 }
-      ]);
-      tail.animations.push(wag);
+    if (tail1 && tail2) {
+      const makeWagAnim = () => {
+        const anim = new BABYLON.Animation("wagZ", "rotation.z", 30,
+          BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+        anim.setKeys([
+          { frame: 0, value:  0.3 },
+          { frame: 15, value: -0.3 },
+          { frame: 30, value:  0.3 }
+        ]);
+        return anim;
+      };
+
+      
+      tail1.animations = [makeWagAnim()];
+      tail2.animations = [makeWagAnim()];
+
 
       // Trigger via tombol
       let wagging = false;
       button.onPointerUpObservable.add(() => {
         if (!wagging) {
-          scene.beginAnimation(tail, 0, 30, true);
+          scene.beginAnimation(tail1, 0, 30, true);
+          scene.beginAnimation(tail2, 0, 30, true);
           button.textBlock.text = "Berhentiin Ekor";
           wagging = true;
         } else {
-          scene.stopAnimation(tail);
+          scene.stopAnimation(tail1);
+          scene.stopAnimation(tail2);
           button.textBlock.text = "Goyangin Ekor";
           wagging = false;
         }
       });
     } else {
-      console.warn("Ekor tidak ditemukan");
       button.isEnabled = false;
       button.textBlock.text = "Ekor tidak ditemukan";
     }
